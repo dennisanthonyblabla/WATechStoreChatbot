@@ -1,0 +1,10 @@
+1. Library to install
+    - @diwajshing/baileys
+    - nodemon
+    - axios
+    - qrcode-terminal
+2. Setting mode development
+3. Initialization function on whatsapp (scan qr code)
+4. Function to receive chat (instead of adiwjshing, we need to use the whiskeysockets)
+5. Calling API
+6. Sending Message (API) 
