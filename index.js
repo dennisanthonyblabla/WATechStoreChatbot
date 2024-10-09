@@ -34,7 +34,7 @@ async function startSock() {
     sock.ev.on('creds.update', saveCreds);
     sock.ev.on('messages.upsert', async m => {
         const msg = m.messages[0];
-        console.log('yellow '+JSON.stringify(msg));
+        console.log(JSON.stringify(msg));
 
         const generate = async (type, url) => {
             const generated = await generateWAMessageContent({
@@ -45,108 +45,34 @@ async function startSock() {
             return generated[`${type}Message`]
         }
 
-        let sectionmsg = generateWAMessageFromContent(msg.key.remoteJid, {
-            viewOnceMessage: {
-              message: {
-                "messageContextInfo": {
-                  "deviceListMetadata": {},
-                  "deviceListMetadataVersion": 2
-                },
-                interactiveMessage: proto.Message.InteractiveMessage.create({
-                  header: proto.Message.InteractiveMessage.Header.create({
-                    title:"Data Kakak belum tercatat di data pelanggan kami 😔",
-                  }),
-                  body: proto.Message.InteractiveMessage.Body.create({
-                    text: "Apakah Kakak mau buat data baru?"
-                  }),
-                  footer: proto.Message.InteractiveMessage.Footer.create({
-                    text: "Data kakak aman terjaga di database customer kami."
-                  }),
-                //   header: proto.Message.InteractiveMessage.Header.create({
-                //     title: ``,
-                //     // videoMessage: await generate("image", { url: thumbnail }),
-                //     hasMediaAttachment: false
-                //   }),
-                  nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
-                    buttons: [{
-                    name: "quick_reply",
-                    buttonParamsJson: JSON.stringify({
-                        display_text: "Ya",
-                        id: "id 1"
-                    })
-                },{
-                    name: "quick_reply",
-                    buttonParamsJson: JSON.stringify({
-                        display_text: "Tidak",
-                        id: "id 2"
-                    })
-                }]
-                  })
-                })
-              }
-            }
-          }
-        , {
-            ephemeraExpiration: 86400,
-            quoted: msg
-          })
-
     if (m.type === 'notify') {
-        console.log("Nomer Pengirim: " + msg.key.remoteJid);
-        console.log("Isi Pesan: " + msg.message.conversation);
+        // console.log("Nomer Pengirim: " + msg.key.remoteJid);
+        // console.log("Isi Pesan: " + msg.message.conversation);
         if (msg.key.remoteJid.includes('@s.whatsapp.net')) {
             if (msg.message) {
-                if (msg.message.conversation == 'Cek status') {
-                    axios.get("https://script.google.com/macros/s/AKfycbz_C372ST8sSvrrqlX0jLsME8D9XgHZ_gbBQyLgVML1OTtIGBHJWyJ_72DWmitRgmloiw/exec?whatsapp="+ msg.key.remoteJid.replace('@s.whatsapp.net',''))
+                messageContains = msg.message.conversation.toLowerCase();
+                if (messageContains == 'cek status') {
+                    axios.get("https://script.google.com/macros/s/AKfycbxlGu9roa88zTGxjfN63QyQZXQC-8U-19XwA9mP54xUpuntkZmh41DZ1ywSNbi0uCiPBQ/exec?method=getCustOrder&whatsapp="+ msg.key.remoteJid.replace('@s.whatsapp.net',''))
                     .then(async (response) => {
                         console.log(response.data);
-                        const {success, data, message} = response.data;
+                        const {success, orderData, message} = response.data;
                         let str;
+                        let date = new Date(orderData.estimasi_selesai).toLocaleDateString('id-ID');
                         if (success) {
-                            // str = `Hi ${data.nama}`
-                            str = `Halo kak ${data.nama}\n\nStatus Cucian anda \nNo Order : ${data.no_order}\nJenis Layanan : ${data.jenis_layanan}\nTotal Baya : ${data.total_bayar}\n\nStatus : ${data.status}`
+                            str = `Halo kak ${orderData.nama},\nBerikut status cucian anda \n\nNo Order : ${orderData.no_order}\nBerat cucian : ${orderData.quota_yang_dipesan}\nEstimasi Selesai : ${date}\n\nStatus : ${orderData.status}`
 
                             await sock.sendMessage(msg.key.remoteJid, {
                                 text: str
                             })
-                        } else {
-                            await sock.relayMessage(msg.key.remoteJid, sectionmsg.message, {
-                                messageId: sectionmsg.key.id
+
+                            await sock.sendMessage(msg.key.remoteJid, {
+                                text: `Quota cucian yang tersisa : ${orderData.sisa_quota} dari ${orderData.quota_bulan_ini}`
                             })
-                            isRegistering = true;
                         }
                     });
-
-                    // await sock.relayMessage(msg.key.remoteJid, sectionmsg.message, {
-                    //     messageId: sectionmsg.key.id
-                    //   })
-                } else if (msg.message.conversation == 'Magic keyword dennis'){
-                    await sock.sendMessage(msg.key.remoteJid, {
-                        // text: 'Selamat Datang. Ini Dinda. Silahkan tulis \'cek Status\' untuk check status pesanan roti anda!'
-                        messageId: sectionmsg.key.id
-                    }) 
-                } else if (isRegistering) {
-                    if (msg.message.buttonsResponseMessage.selectedDisplayText == 'Ya'){
-                        axios.post("https://script.google.com/macros/s/AKfycbzJDDhPxuwbG2QFQZoUnnPlBOIeQdgL7vxqRBOpi7UuyHAF0kfwalPVNWbVd5SvhRtKrQ/exec?name=" + msg.pushName + "&whatsapp="+ msg.key.remoteJid.replace('@s.whatsapp.net',''))
-                        .then(async (response) => {
-                            console.log(response.data);
-                            if (response.data == 200) {
-                                str = 'Baik Data kakak sudah berhasil kami catat. Silahkan tulis \'Cek status\' untuk memastikan data Kakak sudah benar.'
-                                isRegistering = false;
-                                await sock.sendMessage(msg.key.remoteJid, {
-                                    text: str
-                                })
-                            }
-                    });
-                    } else if (msg.message.buttonsResponseMessage.selectedDisplayText == 'Tidak'){
-                        await sock.sendMessage(msg.key.remoteJid, {
-                            text: 'Baik untuk data Kakak saat ini tidak kami catat ya Kak.'
-                        })
-                        isRegistering = false;
-                    }
                 } else {
                     await sock.sendMessage(msg.key.remoteJid, {
-                        text: 'Selamat datang di Dennis Tech Store! Silahkan ketik \'Cek status\' untuk melihat status pesanan anda.'
+                        text: 'Selamat datang di Cleancare! Silahkan ketik \'Cek status\' untuk melihat status pesanan anda.'
                     })
                 }
             }

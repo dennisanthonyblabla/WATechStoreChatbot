@@ -8,3 +8,51 @@
 4. Function to receive chat (instead of adiwjshing, we need to use the whiskeysockets)
 5. Calling API
 6. Sending Message (API) 
+
+
+cara buat button
+let sectionmsg = generateWAMessageFromContent(msg.key.remoteJid, {
+            viewOnceMessage: {
+              message: {
+                "messageContextInfo": {
+                  "deviceListMetadata": {},
+                  "deviceListMetadataVersion": 2
+                },
+                interactiveMessage: proto.Message.InteractiveMessage.create({
+                  header: proto.Message.InteractiveMessage.Header.create({
+                    title:"Data Kakak belum tercatat di data pelanggan kami 😔",
+                  }),
+                  body: proto.Message.InteractiveMessage.Body.create({
+                    text: "Apakah Kakak mau buat data baru?"
+                  }),
+                  footer: proto.Message.InteractiveMessage.Footer.create({
+                    text: "Data kakak aman terjaga di database customer kami."
+                  }),
+                //   header: proto.Message.InteractiveMessage.Header.create({
+                //     title: ``,
+                //     // videoMessage: await generate("image", { url: thumbnail }),
+                //     hasMediaAttachment: false
+                //   }),
+                  nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+                    buttons: [{
+                    name: "quick_reply",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: "Ya",
+                        id: "id 1"
+                    })
+                },{
+                    name: "quick_reply",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: "Tidak",
+                        id: "id 2"
+                    })
+                }]
+                  })
+                })
+              }
+            }
+          }
+        , {
+            ephemeraExpiration: 86400,
+            quoted: msg
+          })
